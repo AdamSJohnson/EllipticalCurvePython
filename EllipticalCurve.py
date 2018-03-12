@@ -205,6 +205,7 @@ def main():
 	print(z)
 	z = point_addition(a=(3,2),b=(6,2), field=field, ec=ec)
 	print(z)
+	#test
 	z = multiply_point(n = 5,p=(3,2), field=field, ec=ec)
 	print(z)
 if __name__ == '__main__':

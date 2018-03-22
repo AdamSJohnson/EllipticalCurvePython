@@ -94,26 +94,29 @@ def generate_field(ec = (1,1,11)):
             ret_field.append(tup2)
     return ret_field
 
-def point_addition(a=(-1,-1), b=(-1,-1), field=[], ec = (-1,-1,-1)):
+def point_addition(a=(-1,-1), b=(-1,-1), ec = (-1,-1,-1)):
     #call must pass new values
-    if a == (-1,-1) or b == (-1,1) or field == [] or ec[2] == -1:
+    if a == (-1,-1) or b == (-1,1) or ec[2] == -1:
         print('change em')
         return 0
     q = ec[2]
     #make sure we are adding points in the field
-    if a in field and b in field:
-        print('good')
+    if a == 0:
+        return b
+    if b == 0:
+        return a
+    if True:
+        #print('good')
         #case 1 a.x != b.x
         if a[0] != b[0]:
+            #print('not equal points')
             #different point addition
             #get y and do correct negative modulus
             y_comp = a[1] - b[1]
-            while y_comp < 0:
-                y_comp += q
+            
             #get x and do correct negative modulus
             x_comp = a[0]-b[0]
-            while x_comp < 0:
-                x_comp += q
+            
             y_comp = y_comp % q
             x_comp = x_comp % q
 
@@ -122,91 +125,145 @@ def point_addition(a=(-1,-1), b=(-1,-1), field=[], ec = (-1,-1,-1)):
             m = m % q
             #solve the lines
             x_r = pow(m, 2) - (a[0] + b[0])
-            while x_r < 0:
-                x_r += q
+            
             x_r = x_r % q
             y_r = a[1] + m * (x_r - a[0])
-            while y_r < 0:
-                y_r += q
+            
             y_r = y_r % q
 
-            if (x_r, y_r) in field:
-                return (x_r, q - y_r)
-            else:
-                return 0
+            
+            return (x_r, q - y_r)
+            
         #point doubling case
         if a == b:
+            #print('equal points')
             #calculat the x part of m
             m_x = 3*pow(a[0], 2) + ec[0]
-            #do correct negative modulus
-            while m_x < 0:
-                m_x += q
+            
             #correct positive mod
             m_x = m_x % q
-
+            #print('a')
             #calculate the y inverse
             m_y = 2 * a[1]
-            while m_y < 0:
-                m_y += q
+            
+            #print('b_1')
             m_y = m_y % q
             m_y = egcd(q, m_y)[1]
-
+            #print('b_2')
             #get the full m
             m = m_x * m_y
             m = m % q
 
             x_r = pow(m, 2) - 2 * a[0]
-            while x_r < 0:
-                x_r += q
+            
+            #print('c')  
             x_r = x_r % q
 
             y_r = a[1] + m * (x_r - a[0])
-            while y_r < 0:
-                y_r += q
+
+            #print('d') 
             y_r = y_r % q
             return (x_r, q - y_r)
     # if we end up here we are in the negative case p + (-p) = infinity point
     return 0
 
-def multiply_point(n=-1, p=(-1,-1), field=[], ec=(-1,-1,-1)):
+def multiply_point(n=-1, p=(-1,-1),  ec=(-1,-1,-1)):
     if n < 1:
         return 0
-    if p == (-1,-1) or field == [] or ec[2] == -1:
+    if p == (-1,-1) or  ec[2] == -1:
         return 0
-    summed_point = (-1,-1)
+    Q = 0
+    R = p
     while n > 0:
-        if n % 2 == 0:
-            n = n/2
-            p = point_addition(a=p, b=p, field=field, ec = ec)
-        else:
-            n = n - 1
-            if summed_point == (-1,-1):
-                summed_point = p
-            else:
-                summed_point = point_addition(a=p, b=summed_point, field=field, ec = ec)
-    return summed_point
+        if n & 1 == 1:
+            Q = point_addition(a=Q, b=R, ec=ec)
+        R = point_addition(a=R, b=R, ec=ec)
+        n =  n >> 1
 
+    return Q
+
+def secondmain():
+    file = open('elgamal.keys', 'r')
+    encrypted = open('elgamal_cipher_suny.txt','r')
+    ciphers = []
+    for x in encrypted:
+        x.replace('\n','')
+        x.replace(' ', '')
+        x = x.split(',')
+        ciphers.append((int(x[0]),int(x[1])))
+    #print(ciphers)
+    Prime = 211287523889848166456771978073530465593093161450010064509303400255860514422619
+    Generator = 15944282073914562075116370489962003433567850159612874030242082495627173757989
+    Exponent = 102112374625719848836417645466897582644268266380360636462856219195606277562091
+    b = 102112374625719848836417645466897582644268266380360636462856219195606277562091
+
+    res = ''
+    for x in ciphers:
+        half_mask = x[0]
+        cipher = x[1]
+        full_mask = pow(half_mask, b, Prime)
+        neg_full_mask = egcd(Prime, full_mask)[1]
+        message = (cipher * neg_full_mask) % Prime
+        res = res + chr(message)
+    print(res)
+    meh = open('Assignment4_5.txt', 'w')
+    meh.write(res)
+    
 def main():
-    ec = build_ec(n_bits=15)
-    while ec[0] < 0:
-        ec = build_ec(n_bits=15)
-    #print('x^3 +' , ec[0], '* x^2 +', ec[1], 'mod', ec[2])
+    #our secret half
 
-    ec = (0, -2, 7)
-    field = generate_field(ec=ec)
-    print(field)
-    size = 0
-    for i in field:
-        size+=1
-    print(size)
-    z = point_addition(a=(3,2),b=(3,2), field=field, ec=ec)
-    print(z)
-    z = point_addition(a=(5,2),b=(6,2), field=field, ec=ec)
-    print(z)
-    z = point_addition(a=(3,2),b=(6,2), field=field, ec=ec)
-    print(z)
-    #test
-    z = multiply_point(n = 5,p=(3,2), field=field, ec=ec)
-    print(z)
+    N = 182755680224874988969105090392374859247
+    #the slope value
+    a = 286458106491124997002528249079664631375
+    #the prime q
+    q = 231980187997634794246138521723892165531
+
+    #our curve
+    ec = (a, 0, q)
+
+    file = open('a4.cipher', 'r')
+    c = []
+    
+    result = []
+    result2 = ''
+    for x in file:
+        #print(x)
+        #print(x)
+        x = x.replace('\n', '')
+        x= x.split(' ')
+        for y in x:
+            c.append(int(y))
+        #print(c)
+        cipher_point = (c[0], c[1])
+        half_mask = (c[2],c[3])
+        #print(half_mask)
+        #print(cipher_point)
+        full_mask = multiply_point(n=N, p=half_mask, ec=ec)
+        #print('full mask done')
+        neg_full_mask = (full_mask[0], q - full_mask[1])
+        #print(neg_full_mask)
+        message = point_addition(a=cipher_point, b=neg_full_mask, ec=ec)
+
+        test = point_addition(a=message, b=full_mask, ec=ec)
+
+        if cipher_point != test:
+            print(message)
+            print(test)
+            print("FUCKED UP NOW")
+            break
+        #print(cipher_point)
+        #print(message)
+        #result.append('{0:1b}'.format(message[0]))
+        c = []
+        result.append(message)
+        result2 = result2+chr(message[0])
+
+    print(result2) 
+    file = open('elgamal.keys','w')
+    file.write(result2)
+    input('  asdf ')
+
+    
+
 if __name__ == '__main__':
-    main()
+    secondmain()

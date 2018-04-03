@@ -249,7 +249,7 @@ def main():
         if cipher_point != test:
             print(message)
             print(test)
-            print("FUCKED UP NOW")
+            
             break
         #print(cipher_point)
         #print(message)
@@ -261,9 +261,10 @@ def main():
     print(result2) 
     file = open('elgamal.keys','w')
     file.write(result2)
-    input('  asdf ')
+    #input('  asdf ')
 
     
 
 if __name__ == '__main__':
+    main()
     secondmain()
